@@ -31,7 +31,7 @@ const localStrategy = async (email, password, done) => {
     let user = await User.findOne({ email }).select("-__v -createdAt -updatedAt -token");
     if (!user) return done();
     if (bcrypt.compareSync(password, user.password)) {
-      const { password, ...userWithoutPassword } = user.toJSON();
+      let { password, ...userWithoutPassword } = user.toJSON();
       return done(null, userWithoutPassword);
     }
   } catch (err) {

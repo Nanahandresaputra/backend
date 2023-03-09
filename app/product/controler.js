@@ -8,28 +8,21 @@ const Tag = require("../tag/model");
 
 // get product
 const index = async (req, res, next) => {
-  // try {
-  //   let product = await ProductFood.find().populate("category").populate("tags");
-  //   return res.json(product);
-  // } catch (e) {
-  //   next(e);
-  // }
-  // menyediakan filter, pagination, count pada product API
   try {
-    let { skip = 0, limit = 10, q = "", category = "", tags = [] } = req.query;
+    let { skip = 0, limit = 6, q = "", category = "", tags = [] } = req.query;
     // q untuk pencarian
     let criteria = {};
     if (q.length) {
       criteria = {
         ...criteria,
-        name: { $regex: `${q}`, $options: "i" },
+        name: { $regex: q, $options: "i" },
       };
     }
     if (category.length) {
       let categoryResult = await Categories.findOne({
         name: { $regex: `${category}`, $options: "i" },
       });
-      if (category) {
+      if (categoryResult) {
         criteria = {
           ...criteria,
           category: categoryResult._id,
@@ -39,11 +32,13 @@ const index = async (req, res, next) => {
     if (tags.length) {
       let tagsResult = await Tag.find({ name: { $in: tags } });
       if (tagsResult.length > 0) {
-        criteria = { ...criteria, tags: tagsResult.map((tag) => tag._id) };
+        criteria = { ...criteria, tags: { $in: tagsResult.map((tag) => tag._id) } };
       }
     }
-    let count = await ProductFood.countDocuments();
-    let product = await ProductFood.find().skip(parseInt(skip)).limit(parseInt(limit));
+    console.log(criteria);
+    let count = await ProductFood.find(criteria).countDocuments();
+    let product = await ProductFood.find(criteria).skip(parseInt(skip)).limit(parseInt(limit)).populate("category").populate("tags");
+
     res.json({
       data: product,
       count,
@@ -57,7 +52,7 @@ const index = async (req, res, next) => {
 let productIndex = async (req, res, next) => {
   try {
     let { id } = req.params;
-    let product = await ProductFood.findById(id).populate("category");
+    let product = await ProductFood.findById(id).populate("category").populate("tags");
     // .populate('category'), category diambil dari schema yang ada di productSchema
     return res.json(product);
   } catch (e) {
@@ -89,7 +84,10 @@ const store = async (req, res, next) => {
     if (payload.category) {
       let category = await Categories.findOne({ name: { $regex: payload.category, $options: "i" } });
       if (category) {
-        payload = { ...payload, category: category._id };
+        payload = {
+          ...payload,
+          category: category._id,
+        };
       } else {
         delete payload.category;
       }
@@ -109,7 +107,7 @@ const store = async (req, res, next) => {
       // konfigurasi untuk upload image/file
       let tmp_path = req.file.path;
       let originalExt = req.file.originalname.split(".")[req.file.originalname.split(".").length - 1];
-      let fileName = req.file.filename + "." + originalExt;
+      let fileName = `${req.file.filename}.${originalExt}`;
       let target_path = path.resolve(config.rootPath, `./public/images/products/${fileName}`);
       //model upload
       let src = fs.createReadStream(tmp_path);
@@ -139,7 +137,7 @@ const store = async (req, res, next) => {
         next(err);
       });
     } else {
-      let product = await new Product(payload);
+      let product = await new ProductFood(payload);
       product.save();
       return res.json(product);
     }
@@ -163,7 +161,10 @@ const update = async (req, res, next) => {
     if (payload.category) {
       let category = await Categories.findOne({ name: { $regex: payload.category, $options: "i" } });
       if (category) {
-        payload = { ...payload, category: category._id };
+        payload = {
+          ...payload,
+          category: category._id,
+        };
       } else {
         delete payload.category;
       }
@@ -173,7 +174,10 @@ const update = async (req, res, next) => {
     if (payload.tags && payload.tags.length > 0) {
       let tags = await Tag.find({ name: { $in: payload.tags } });
       if (tags.length) {
-        payload = { ...payload, tags: tags.map((tag) => tag._id) };
+        payload = {
+          ...payload,
+          tags: tags.map((tag) => tag._id),
+        };
       } else {
         delete payload.tags;
       }
@@ -183,7 +187,7 @@ const update = async (req, res, next) => {
     if (req.file) {
       let tmp_path = req.file.path;
       let originalExt = req.file.originalname.split(".")[req.file.originalname.split(".").length - 1];
-      let fileName = req.file.filename + "." + originalExt;
+      let fileName = `${req.file.filename}.${originalExt}`;
       let target_path = path.resolve(config.rootPath, `./public/images/products/${fileName}`);
       let src = fs.createReadStream(tmp_path);
       let dest = fs.createWriteStream(target_path);
@@ -197,11 +201,15 @@ const update = async (req, res, next) => {
             fs.unlinkSync(currentImage);
           }
 
-          product = await ProductFood.findByIdAndUpdate(id, payload, {
-            new: true,
-            // parameter new: true akan mengembalikan data terbaru setelah di update, tetapi jika tidak menambahkan parameter new: true akan mengembalikan data yang lama
-            runValidators: true,
-          });
+          product = await ProductFood.findByIdAndUpdate(
+            id,
+            { ...payload, image_url: fileName },
+            {
+              new: true,
+              // parameter new: true akan mengembalikan data terbaru setelah di update, tetapi jika tidak menambahkan parameter new: true akan mengembalikan data yang lama
+              runValidators: true,
+            }
+          );
           return res.json(product);
         } catch (err) {
           fs.unlinkSync(target_path);

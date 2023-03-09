@@ -6,7 +6,7 @@ var logger = require("morgan");
 const cors = require("cors");
 const { decodeToken } = require("./middlewares/index");
 
-// router
+// src router
 const routerProduct = require("./app/product/routes");
 const routerCategory = require("./app/category/routes");
 const routerTag = require("./app/tag/routes");

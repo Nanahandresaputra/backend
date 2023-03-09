@@ -32,4 +32,4 @@ const productSchema = Schema(
   { timestamps: true }
 );
 
-module.exports = model("productFood", productSchema);
+module.exports = model("ProductFood", productSchema);

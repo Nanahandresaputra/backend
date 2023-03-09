@@ -78,18 +78,17 @@ const update = async (req, res, next) => {
 const destroy = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const address = await Address.findById(id);
+    let address = await Address.findById(id);
     const subjectAddress = subject("DeliveryAddress", { ...address, user_id: address.user });
-    const policy = policyFor(req.user);
+    let policy = policyFor(req.user);
     if (!policy.can("delete", subjectAddress)) {
       return res.json({
         error: 1,
         message: "You're not allowed to modify this resource",
       });
     }
-
     address = await Address.findByIdAndDelete(id);
-    res.json(address);
+    res.json({ message: "delete succesfully", address });
   } catch (err) {
     if (err && err.name === "ValidationError") {
       return res.json({
@@ -98,7 +97,7 @@ const destroy = async (req, res, next) => {
         fields: err.errors,
       });
     }
-    next(e);
+    next(err);
   }
 };
 

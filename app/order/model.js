@@ -14,7 +14,7 @@ const orderSchema = Schema(
       type: Number,
       default: 0,
     },
-    delivery_addres: {
+    delivery_address: {
       provinsi: { type: String, required: [true, "provinsi harus diisi"] },
       kabupaten: { type: String, required: [true, "kabupaten harus diisi"] },
       kecamatan: { type: String, required: [true, "kecamatan harus diisi"] },

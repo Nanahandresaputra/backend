@@ -11,7 +11,7 @@ function getToken(req) {
 // policy
 const policies = {
   guest(user, { can }) {
-    can("read", "productFood");
+    can("read", "ProductFood");
   },
   user(user, { can }) {
     can("view", "Order");

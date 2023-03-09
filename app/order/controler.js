@@ -6,8 +6,9 @@ const { Types } = require("mongoose");
 
 const store = async (req, res, next) => {
   try {
+    let user = req.user;
     let { delivery_address, delivery_fee } = req.body;
-    let items = await CartItem.find({ user: user._id }).populate("productFood");
+    let items = await CartItem.find({ user: user._id }).populate("product");
     if (!items) {
       return res.json({
         err: 1,
@@ -24,6 +25,7 @@ const store = async (req, res, next) => {
         provinsi: address.provinsi,
         kabupaten: address.kabupaten,
         kecamatan: address.kecamatan,
+        kelurahan: address.kelurahan,
         detail: address.detail,
       },
       user: user._id,
@@ -33,10 +35,10 @@ const store = async (req, res, next) => {
       items.map((item) => ({
         ...item,
         name: item.product.name,
-        quantity: item.product.quantity,
-        price: item.product.price,
+        quantity: parseInt(item.quantity),
+        price: parseInt(item.price),
         order: order._id,
-        product: item.product.id,
+        product: item.product._id,
       }))
     );
 
@@ -76,5 +78,7 @@ const index = async (req, res, next) => {
     next(err);
   }
 };
+
+const destroy = async (req, res, next) => {};
 
 module.exports = { store, index };
